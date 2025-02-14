@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canvas Example</title>
+  </head>
+  <body>
+    <img id="slot1" width="220" height="277" src="/casino.jpg" alt="slot1" />
+    <img id="slot2" width="220" height="277" src="/casino.jpg" alt="slot2" />
+    <canvas id="myCanvas"></canvas>
+    <script>
+      var canvas = document.getElementById('myCanvas');
+      var context = canvas.getContext('2d');
+
+      var slotWidth = 150;
+      var slotHeight = 150;
+      var slotSpacing = 25;
+
+      var symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔'];
+
+      context.canvas.width  = slotWidth*6 + slotSpacing*4;
+      context.canvas.height = slotHeight*2;
+
+      function getRandomInt(max) {
+          return Math.floor(Math.random() * max);
+      }
+
+      function slotMachine(){
+        this.slot1 = new slotColumn(slotWidth*3, 0, 2, 100);
+        this.slot2 = new slotColumn(slotWidth*4, 0, 0, 100);
+        this.slot3 = new slotColumn(slotWidth*5, 0, 1, 100);
+        this.interval1;
+
+        this.reset = function() {
+            clearInterval(interval1);
+            slot1.reset();
+            slot2.reset();
+            slot3.reset();
+        };
+
+        this.spin = function(){
+            interval1 = setInterval(function(){
+            slot1.update();
+            slot2.update();
+            slot3.update();
+        }, 10);
+        }
+
+
+      }
+
+      function slotColumn(startX, startY, winningNumber, length){
+        this.startX = startX;
+        this.startY = startY;
+        this.x = startX;
+        this.y = startY;
+        this.winningNumber = winningNumber;
+        this.lengthOfWheel = length;
+        this.symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
+        this.roller = [];
+        this.speed = 20;
+        this.current = 0;
+
+        for(var i = 0; i < this.lengthOfWheel; i++){
+            //Set larger font size
+            this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
+        }
+        this.roller.push(this.symbols[this.winningNumber]);
+        context.font = '100px Arial';
+
+        
+
+
+        this.reset = function() {
+            this.roller = [];
+            this.x = this.startX;
+            this.y = this.startY;
+            for(var i = 0; i < this.lengthOfWheel; i++){
+                //Set larger font size
+                this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
+            }
+            this.roller.push(this.symbols[this.winningNumber]);
+        }
+
+        this.update = function() {
+            // Clear the specific slot area to avoid ghosting
+            context.clearRect(this.x, 0, slotWidth, context.canvas.height);
+            
+            this.y = this.y + this.speed;
+            if (this.current > this.lengthOfWheel){
+                this.speed = 0;
+            }
+            else if (this.current > this.lengthOfWheel-10 && (this.y-this.startY) / slotHeight > this.current){
+                this.speed = this.speed - 2;
+            }
+            this.current = (this.y-this.startY) / slotHeight;
+            console.log(this.speed);
+            for (var i = 0; i < this.lengthOfWheel; i++) {
+                
+                context.fillText(this.roller[i], this.x, (this.y - (slotHeight * i)));
+            }
+        }
+      }
+
+
+      function drawSlot(x, y, symbol) {
+          context.fillStyle = '#FFF';
+          context.fillRect(x, y, slotWidth, slotHeight);
+          context.fillStyle = '#000';
+          context.font = '100px Arial';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText(symbol, x + slotWidth / 2, y + slotHeight / 2);
+      }
+
+      function getRandomSymbol() {
+          return symbols[Math.floor(Math.random() * symbols.length)];
+      }
+
+    //   function drawSlotMachinePlayer1() {
+    //       var startX = 0;
+    //       var startY = (canvas.height - slotHeight) / 2;
+
+    //       for (var i = 0; i < 3; i++) {
+    //           var x = startX + i * (slotWidth + slotSpacing);
+    //           var symbol = getRandomSymbol();
+    //           drawSlot(x, startY, symbol);
+    //       }
+
+    //   }
+
+    //   function drawSlotMachinePlayer2() {
+    //       var startX = 500;
+    //       var startY = (canvas.height - slotHeight) / 2;
+
+    //       for (var i = 0; i < 3; i++) {
+    //           var x = startX + i * (slotWidth + slotSpacing);
+    //           var symbol = getRandomSymbol();
+    //           drawSlot(x, startY, symbol);
+    //       }
+    //   }
+
+      
+
+    let slot1 = new slotColumn(slotWidth*3, 0, 2, 50);
+    let slot2 = new slotColumn(slotWidth*4, 0, 0, 65);
+    let slot3 = new slotColumn(slotWidth*5, 0, 1, 80);
+    let interval1;
+
+      document.addEventListener('keydown', function(event) {
+          if (event.code === 'Space') {
+            //reset the screen when pressing
+            context.clearRect(0,0, context.canvas.width, context.canvas.height);
+            clearInterval(interval1);
+            slot1.reset();
+            slot2.reset();
+            slot3.reset();
+
+            interval1 = setInterval(function(){
+                slot1.update();
+                slot2.update();
+                slot3.update();
+            }, 10);
+
+          }
+
+          else if(event.code === 'ArrowUp'){
+
+              slotColumn(slotWidth*3, 0);
+              slotColumn(slotWidth*4, 0);
+              slotColumn(slotWidth*5, 0);
+          }
+      });
+    </script>
+  </body>
+</html>
