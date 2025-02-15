@@ -113,7 +113,7 @@
     import { onMount } from 'svelte';
     import { GameManager } from '$lib/index';
     import { GameState } from '$lib/GameState';
-    import { writable } from 'svelte/store';
+    import { writable, type Writable } from 'svelte/store';
     import { SlotMachine } from '$lib/SlotMachine';
     import {WIDTH, HEIGHT, TIMESTEP, SYMBOLS, GAMETIME,
         JACKPOT2XVOL,JACKPOT3XVOL, WINSOUNDVOL, BACKGROUNDVOL
@@ -125,15 +125,42 @@
     let jackpot2x: HTMLAudioElement;
     let jackpot3x: HTMLAudioElement;
 
+
+    let p1Score = writable(0);
+    let p1Time = writable(0);
+    let p1Rolling = writable(false);
+    let p1GameState = writable("NOT STARTED");
+    let p1LastResult = writable("[ __ __ __ ]");
+    let p1LastScore = writable(0);
+
+    let p2Score = writable(0);
+    let p2Time = writable(0);
+    let p2Rolling = writable(false);
+    let p2GameState = writable("NOT STARTED");
+    let p2LastResult = writable("[ __ __ __ ]");
+    let p2LastScore = writable(0);
+    
+    let overlay: HTMLDivElement;
+    let p1fireworks: HTMLCanvasElement;
+    let p2fireworks: HTMLCanvasElement;
+    let players: NodeListOf<HTMLElement>;
+
     class Game {
         playerList: GameManager[];
         currentGameState: GameState;
 
-        async handleKey(gm :  GameManager) {
+        async handleKey(
+            gm :  GameManager, 
+            score : Writable,
+            time : Writable,
+            rolling : Writable,
+            gameState : Writable,
+            lastResult : Writable,
+            lastScore : Writable) {
             if (!gm.isrolling && gm.state === GameState.RUNNING) {
-                p1Rolling.set(true);
+                rolling.set(true);
                 await gm.spin();
-                p1Rolling.set(false);
+                rolling.set(false);
 
                 // 2 x combo
                 if (this.playerList[0].lastScore > 9 && gm.lastScore < 100) {
@@ -147,24 +174,24 @@
                     jackpot3x.play();
                 }
 
-                p1Score.set(gm.score);
+                score.set(gm.score);
                 let spin_emojis = "[";
                 gm.lastSpin.forEach(element => {
                     spin_emojis += SYMBOLS[element];
                 });
                 spin_emojis += "]";
-                p1LastResult.set(spin_emojis);
-                p1LastScore.set(gm.lastScore);
+                lastResult.set(spin_emojis);
+                lastScore.set(gm.lastScore);
             }
         }
         
         async handleKeyPress(event: KeyboardEvent) {
             if (event.key === 'a') {
                 let pl = this.playerList[0];
-                this.handleKey(pl);
+                this.handleKey(pl, p1Score,p1Time,p1Rolling,p1GameState,p1LastResult,p1LastScore);
             } if (event.key === 'l') {
                 let pl = this.playerList[1];
-                this.handleKey(pl);
+                this.handleKey(pl, p2Score,p2Time,p2Rolling,p2GameState,p2LastResult,p2LastScore);
             }
         }
 
@@ -290,24 +317,7 @@
         }
     }
 
-    let p1Score = writable(0);
-    let p1Time = writable(0);
-    let p1Rolling = writable(false);
-    let p1GameState = writable("NOT STARTED");
-    let p1LastResult = writable("[ __ __ __ ]");
-    let p1LastScore = writable(0);
 
-    let p2Score = writable(0);
-    let p2Time = writable(0);
-    let p2Rolling = writable(false);
-    let p2GameState = writable("NOT STARTED");
-    let p2LastResult = writable("[ __ __ __ ]");
-    let p2LastScore = writable(0);
-    
-    let overlay: HTMLDivElement;
-    let p1fireworks: HTMLCanvasElement;
-    let p2fireworks: HTMLCanvasElement;
-    let players: NodeListOf<HTMLElement>;
 
 
     onMount(() => {
