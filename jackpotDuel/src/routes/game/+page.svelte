@@ -127,27 +127,77 @@
 
     class Game {
         playerList: GameManager[];
-        player1: GameManager;
-        player2: GameManager;
-
         currentGameState: GameState;
 
-        constructor(m1: SlotMachine, m2: SlotMachine) {
-            this.player1 = new GameManager(GAMETIME, m1);
-            this.player2 = new GameManager(GAMETIME, m2);
+        async handleKey(gm :  GameManager) {
+            if (!gm.isrolling && gm.state === GameState.RUNNING) {
+                p1Rolling.set(true);
+                await gm.spin();
+                p1Rolling.set(false);
 
-            this.playerList = [this.player1, this.player2];
+                // 2 x combo
+                if (this.playerList[0].lastScore > 9 && gm.lastScore < 100) {
+                    winSound.play();
+                    jackpot2x.play();
+                }
 
-            this.currentGameState = GameState.NOT_STARTED;
+                // 3 x combo
+                if (gm.lastScore > 100) {
+                    winSound.play();
+                    jackpot3x.play();
+                }
 
+                p1Score.set(gm.score);
+                let spin_emojis = "[";
+                gm.lastSpin.forEach(element => {
+                    spin_emojis += SYMBOLS[element];
+                });
+                spin_emojis += "]";
+                p1LastResult.set(spin_emojis);
+                p1LastScore.set(gm.lastScore);
+            }
+        }
+        
+        async handleKeyPress(event: KeyboardEvent) {
+            if (event.key === 'a') {
+                let pl = this.playerList[0];
+                this.handleKey(pl);
+            } if (event.key === 'l') {
+                let pl = this.playerList[1];
+                this.handleKey(pl);
+            }
+        }
+
+        constructor(players : NodeListOf<HTMLElement>) {
+            this.playerList = [];
+            players.forEach((canvas: HTMLElement, index: number) => {
+                const context: CanvasRenderingContext2D = (canvas as HTMLCanvasElement).getContext('2d')!;
+                const button: string = context.canvas.id;
+                context.canvas.width = WIDTH;
+                context.canvas.height = HEIGHT;
+                let sl = new SlotMachine(context, 25);
+                this.playerList.push(new GameManager(GAMETIME,sl))
+            });
+            console.log(this.playerList);
+            
             this.handleKeyPress = this.handleKeyPress.bind(this);
+            window.addEventListener('keyup', this.handleKeyPress);
+            
+            setInterval(() => {
+                this.playerList.forEach(machine => {
+                    machine.machine.update();
+                });
+                this.gameLoop();
+            }, TIMESTEP);
+            this.currentGameState = GameState.NOT_STARTED;
         }
 
         bind(p1: HTMLDivElement, p2: HTMLDivElement, p1fireworks: HTMLCanvasElement, p2fireworks: HTMLCanvasElement) {
-            this.player1.bindElement(p1);
-            this.player2.bindElement(p2);
-            this.player1.bindFireworks(p1fireworks);
-            this.player2.bindFireworks(p2fireworks);
+            this.playerList[0].bindElement(p1);
+            this.playerList[1].bindElement(p2);
+            this.playerList[0].bindFireworks(p1fireworks);
+            this.playerList[1].bindFireworks(p2fireworks);
+
         }
 
         async startGame() {
@@ -173,83 +223,23 @@
             backgroundMusic.play();
         }
 
-
-        async handleKeyPress(event: KeyboardEvent) {
-            if (event.key === 'a') {
-                if (!this.player1.isrolling && this.player1.state === GameState.RUNNING) {
-                    p1Rolling.set(true);
-                    await this.player1.spin();
-                    p1Rolling.set(false);
-
-                    // 2 x combo
-                    if (this.player1.lastScore > 9 && this.player1.lastScore < 100) {
-                        winSound.play();
-                        jackpot2x.play();
-                    }
-
-                    // 3 x combo
-                    if (this.player1.lastScore > 100) {
-                        winSound.play();
-                        jackpot3x.play();
-                    }
-
-                    p1Score.set(this.player1.score);
-                    let spin_emojis = "[";
-                    this.player1.lastSpin.forEach(element => {
-                        spin_emojis += SYMBOLS[element];
-                    });
-                    spin_emojis += "]";
-                    p1LastResult.set(spin_emojis);
-                    p1LastScore.set(this.player1.lastScore);
-                }
-            } if (event.key === 'l') {
-                if (!this.player2.isrolling && this.player2.state === GameState.RUNNING) {
-                    p2Rolling.set(true);
-                   
-                    await this.player2.spin();
-                    p2Rolling.set(false);
-
-                    // 2 x combo
-                    if (this.player2.lastScore > 9 && this.player2.lastScore < 100) {
-                        winSound.play();
-                        jackpot2x.play();
-                    }
-
-                    // 3 x combo
-                    if (this.player2.lastScore > 100) {
-                        winSound.play();
-                        jackpot3x.play();
-                    }
-
-                    p2Score.set(this.player2.score);
-                    let spin_emojis = "[";
-                    this.player2.lastSpin.forEach(element => {
-                        spin_emojis += SYMBOLS[element];
-                    });
-                    spin_emojis += "]";
-                    p2LastResult.set(spin_emojis);
-                    p2LastScore.set(this.player2.lastScore);
-                }
-            }
-        }
-
         resetGame() {
-            this.player1.reset();
-            this.player2.reset();
+            this.playerList[0].reset();
+            this.playerList[1].reset();
 
-            p1Score.set(this.player1.score);
-            p1Time.set(this.player1.timeLeft);
-            p1Rolling.set(this.player1.isrolling);
+            p1Score.set(this.playerList[0].score);
+            p1Time.set(this.playerList[0].timeLeft);
+            p1Rolling.set(this.playerList[0].isrolling);
             p1GameState.set("NOT STARTED");
             p1LastResult.set("[ __ __ __ ]");
-            p1LastScore.set(this.player1.lastScore);
+            p1LastScore.set(this.playerList[0].lastScore);
 
-            p2Score.set(this.player2.score);
-            p2Time.set(this.player2.timeLeft);
-            p2Rolling.set(this.player2.isrolling);
+            p2Score.set(this.playerList[1].score);
+            p2Time.set(this.playerList[1].timeLeft);
+            p2Rolling.set(this.playerList[1].isrolling);
             p2GameState.set("NOT STARTED");
             p2LastResult.set("[ __ __ __ ]");
-            p2LastScore.set(this.player2.lastScore);
+            p2LastScore.set(this.playerList[1].lastScore);
 
             // Stop and reset background music
             backgroundMusic.pause();
@@ -260,26 +250,25 @@
             if (this.currentGameState === GameState.RUNNING) {
                 this.playerList.forEach(player => {
                    if (player.timeLeft <= 0 && !player.isrolling) {
-                        //console.log("Player Time is up");
                         player.state = GameState.OVER;
                    } else if (player.timeLeft > 0) {
                         player.timeLeft -= 1/(10*TIMESTEP);
                    }
                 });
-                if (this.player1.state === GameState.OVER && this.player2.state === GameState.OVER) {
+                if (this.playerList[0].state === GameState.OVER && this.playerList[1].state === GameState.OVER) {
                     winSound.play();
                     overlay.style.display = "flex";
                     let gameover = document.createElement('h1');
                     gameover.innerHTML = "Game Over";
                     overlay.appendChild(gameover);
                     let p1Score = document.createElement('h2');
-                    p1Score.innerHTML = "P1 Score: " + this.player1.score;
+                    p1Score.innerHTML = "P1 Score: " + this.playerList[0].score;
                     overlay.appendChild(p1Score);
                     let p2Score = document.createElement('h2');
-                    p2Score.innerHTML = "P2 Score: " + this.player2.score;
+                    p2Score.innerHTML = "P2 Score: " + this.playerList[1].score;
                     overlay.appendChild(p2Score);
                     let winner = document.createElement('h2');
-                    winner.innerHTML = "Winner is: " + (this.player1.score > this.player2.score ? "P1" : "P2");
+                    winner.innerHTML = "Winner is: " + (this.playerList[0].score > this.playerList[1].score ? "P1" : "P2");
                     overlay.appendChild(winner);
                     let restart = document.createElement('button');
                     restart.innerHTML = "Restart";
@@ -289,14 +278,13 @@
                         this.startGame();
                     }
                     overlay.appendChild(restart);
-
                     this.currentGameState = GameState.OVER;
                 }
 
-                p1Time.set(Math.floor(this.player1.timeLeft));
-                p2Time.set(Math.floor(this.player2.timeLeft));
-                p1GameState.set((this.player1.state === GameState.OVER ? "OVER" : "GAMIN"));
-                p2GameState.set((this.player2.state === GameState.OVER ? "OVER" : "GAMIN"));
+                p1Time.set(Math.floor(this.playerList[0].timeLeft));
+                p2Time.set(Math.floor(this.playerList[1].timeLeft));
+                p1GameState.set((this.playerList[0].state === GameState.OVER ? "OVER" : "GAMIN"));
+                p2GameState.set((this.playerList[1].state === GameState.OVER ? "OVER" : "GAMIN"));
             }
             // Update the score in the HTML
         }
@@ -316,19 +304,15 @@
     let p2LastResult = writable("[ __ __ __ ]");
     let p2LastScore = writable(0);
     
-
     let overlay: HTMLDivElement;
     let p1fireworks: HTMLCanvasElement;
     let p2fireworks: HTMLCanvasElement;
-    let p: NodeListOf<HTMLElement>;
-    let machines: SlotMachine[] = [];
-    let btns: string[] = [];
+    let players: NodeListOf<HTMLElement>;
 
 
     onMount(() => {
 
         // Initialize sounds 
-        
         backgroundMusic = new Audio("bg.mp3");
         backgroundMusic.loop = true;
         winSound = new Audio("jackpot.mp3"); 
@@ -340,52 +324,27 @@
         winSound.volume = WINSOUNDVOL; // 2x volume
         jackpot2x.volume = JACKPOT2XVOL;
         jackpot3x.volume = JACKPOT3XVOL;
-
         
-
-        p = document.querySelectorAll(".Player");
-        
-        p.forEach((canvas: HTMLElement, index: number) => {
-            const context: CanvasRenderingContext2D = (canvas as HTMLCanvasElement).getContext('2d')!;
-            const button: string = context.canvas.id;
-            context.canvas.width = WIDTH;
-            context.canvas.height = HEIGHT;
-            machines.push(new SlotMachine(context, 25));
-            btns.push(button);
-        });
-
         p1fireworks = document.getElementById('p1fireworks') as HTMLCanvasElement;
         p2fireworks = document.getElementById('p2fireworks') as HTMLCanvasElement;
-
+        
         let player1 = document.getElementById('player1') as HTMLDivElement;
         let player2 = document.getElementById('player2') as HTMLDivElement;
-
-
+        
         let p1Animation = document.getElementById('p1Animation') as HTMLDivElement;
         let p2Animation = document.getElementById('p2Animation') as HTMLDivElement;
-
-
+        
         overlay = document.getElementById('overlay') as HTMLDivElement;
-
-        let game = new Game(machines[0], machines[1]);
-
+        
+        players = document.querySelectorAll(".Player");
+        let game = new Game(players);
+        
         game.bind(player1, player2, p1fireworks, p2fireworks);
-
-        game.player1.animation = p1Animation;
-        game.player2.animation = p2Animation;
+        
+        game.playerList[0].animation = p1Animation;
+        game.playerList[1].animation = p2Animation;
 
         game.startGame();
-
-
-
-        window.addEventListener('keyup', game.handleKeyPress);
-        setInterval(() => {
-            machines.forEach(machine => {
-                machine.update();
-            });
-
-            game.gameLoop();
-        }, TIMESTEP);
 
         // Load PayPal SDK
         const script = document.createElement('script');
