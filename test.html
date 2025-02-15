@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Canvas Example</title>
+    
   </head>
   <body>
     <div style="display: flex;">
@@ -22,6 +23,11 @@
       const N_SLOW = 8; // how many fruits before stop
       const SPEED = 16;
 
+
+      // CanvasWidth = 
+
+      
+
       p = document.querySelectorAll(".Player");
       machines = [];
       btns = [];
@@ -38,28 +44,31 @@
         if (index !== -1) {
            //reset the screen when pressing
            machines[index].spin();
+          
+      
         }});
 
       function getRandomInt(max) {
           return Math.floor(Math.random() * max);
       }
 
-      function statusLight(context, startX, startY) {
+      function statusLight(context, startX, startY, size) {
         this.x = startX;
         this.y = startY;
+        this.size = size
         // 0 = green, 1 = red
         this.status = 0;
 
         context.fillStyle = 'green';
-        context.fillRect(this.x, this.y, 50, 50);
+        context.fillRect(this.x, this.y, size, size);
 
         this.update = function() {
-          context.clearRect(this.x, this.y, 50, 50);
+          context.clearRect(this.x, this.y, this.size, this.size);
           context.fillStyle = this.status === 0 ? 'green' : 'red';
-          context.fillRect(this.x, this.y, 50, 50);
-          console.log("dadsa");
+          context.beginPath();
+          context.arc(this.x, this.y, this.size/2, 0, 2 * Math.PI);
+          context.fill();
         }
-
       }
 
 
@@ -70,7 +79,7 @@
         this.winningNumber = winningNumber;
         this.lengthOfWheel = length;
         this.symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
-        this.interval;
+        this.running = false;
 
         this.init = function() {
           this.roller = [];
@@ -87,6 +96,9 @@
         }
 
         this.update = function() {
+          if (!this.running){
+            return;
+          }
           // Clear the specific slot area to avoid ghosting
           this.context.clearRect(this.x, 0, SLOTWIDTH, HEIGHT);
           this.y = this.y + this.speed;
@@ -97,22 +109,18 @@
           }
           //spinning of wheel
           for (let i = 0; i < this.lengthOfWheel+2; i++) {
-            if (this.y - SLOTHEIGHT * i < SLOTHEIGHT*2.5){
+            if (this.y < SLOTHEIGHT*(2.5+i) && this.y >(i- 1)*SLOTHEIGHT){
               this.context.fillText(this.roller[i], this.x, this.y - SLOTHEIGHT * i);
             }
-            console.log(this.y - SLOTHEIGHT * i)
           }
           this.context.clearRect(this.x, 2*SLOTHEIGHT, SLOTWIDTH, SLOTHEIGHT);
           if (this.speed == 0) {
-            clearInterval(this.interval);
+            this.running = false;
           }
         }
         
-        this.spin = async function() {
-          this.init();
-          this.interval = setInterval(() => {
-            this.update();
-          }, 10);
+        this.spin = function() {
+          this.running = true;
         }
 
         this.init();
@@ -125,11 +133,13 @@
         this.slot1 = new slotColumn(context,placement, 0, this.res[0], 30);
         this.slot2 = new slotColumn(context,placement + SLOTWIDTH, 0, this.res[1], 45);
         this.slot3 = new slotColumn(context,placement + 2*SLOTWIDTH, 0, this.res[2], 60);
+        // this.slot4 = new slotColumn(context,placement + 3*SLOTWIDTH, 0, this.res[2], 60);
+        // this.slot5 = new slotColumn(context,placement + 4*SLOTWIDTH, 0, this.res[2], 60);
         this.cols = [this.slot1, this.slot2, this.slot3];
         this.interval;
         this.spinning = false;
 
-        this.statusLight = new statusLight(context, placement + SLOTWIDTH, HEIGHT-250);
+        this.statusLight = new statusLight(context, placement + SLOTWIDTH*1.5, HEIGHT-250, 50);
 
         this.isDone = function() {
           return this.cols.every(slot => slot.speed === 0);
@@ -155,8 +165,20 @@
             }
           }, 50);
         };
-      
+        
+        this.update = function() {
+          this.slot1.update();
+          this.slot2.update();
+          this.slot3.update();
+          this.statusLight.update();
+        }
       };
+
+      gameLoop = setInterval(() => {
+        machines.forEach(machine => {
+          machine.update();
+        });  
+      }, 10);
 
 
 
