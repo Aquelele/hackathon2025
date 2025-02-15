@@ -13,7 +13,7 @@
 
     }
     #player1 {
-        background-color: white;
+        background-color: lightblue;
     }
     #player2 {
         background-color: orchid;
@@ -44,7 +44,7 @@
     import { writable } from 'svelte/store';
 
 
-    const gameTime = 3;
+    const gameTime = 30;
     class Game {
         p: GameManager[];
         p1: GameManager;
@@ -83,6 +83,8 @@
                     await this.p1.spin();
                     p1Rolling.set(false);
                     p1Score.set(this.p1.score);
+                    p1LastResult.set(this.p1.lastSpin);
+                    p1LastScore.set(this.p1.lastScore);
                 }
             } if (event.key === 'l') {
                 if (!this.p2.isrolling && this.p2.state === GameState.RUNNING) {
@@ -90,6 +92,8 @@
                     await this.p2.spin();
                     p2Rolling.set(false);
                     p2Score.set(this.p2.score);
+                    p2LastResult.set(this.p2.lastSpin);
+                    p2LastScore.set(this.p2.lastScore);
                 }
             }
         }
@@ -98,10 +102,10 @@
         gameLoop() {
             if (this.currentGameState === GameState.RUNNING) {
                 this.p.forEach(player => {
-                   if (player.timeLeft <= 0) {
+                   if (player.timeLeft <= 0 && !player.isrolling) {
                         console.log("Player Time is up");
                         player.state = GameState.OVER;
-                   } else {
+                   } else if (player.timeLeft > 0) {
                         player.timeLeft--;
                    }
                 });
@@ -140,10 +144,15 @@
     let p1Time = writable(0);
     let p1Rolling = writable(false);
     let p1GameState = writable("NOT STARTED");
+    let p1LastResult = writable([0]);
+    let p1LastScore = writable(0);
+
     let p2Score = writable(0);
     let p2Time = writable(0);
     let p2Rolling = writable(false);
     let p2GameState = writable("NOT STARTED");
+    let p2LastResult = writable([0]);
+    let p2LastScore = writable(0);
 
     let overlay: HTMLDivElement
 
@@ -206,12 +215,14 @@
         <h2>P1 time {$p1Time}</h2>
         <h1>ROLLING {$p1Rolling}</h1>
         <h1>GameState {$p1GameState}</h1>
+        <h1>last result: {$p1LastResult}, Score: {$p1LastScore}</h1>
     </div>
     <div class="gameWindow" id="player2">
         <h1>P2 SCORE IS {$p2Score}</h1>
         <h2>P2 time {$p2Time}</h2>
         <h1>ROLLING {$p2Rolling}</h1>
         <h1>GameState {$p2GameState}</h1>
+        <h1>last result: {$p2LastResult}, Score: {$p2LastScore}</h1>
     </div>
 </div>
 <div class="payments">

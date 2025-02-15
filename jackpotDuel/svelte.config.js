@@ -14,7 +14,9 @@ const config = {
 		adapter: adapter({
 			pages: 'build', // Output directory
 			assets: 'build',
-			fallback: null,
+			fallback: undefined,
+			precompress: false,
+			strict: true
 		}),
 		paths: {
 			base: '/jackpotDuel',
