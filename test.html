@@ -14,6 +14,7 @@
       const slotSpacing = 25;
       const width = slotWidth*6 + slotSpacing*4;
       const height = slotHeight*2;
+      const n_slow = 5; // how many fruits before stop
 
       var canvas = document.getElementById('myCanvas');
       var context = canvas.getContext('2d');
@@ -42,7 +43,7 @@
             this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
           };
           this.roller.push(this.symbols[this.winningNumber]);
-          this.roller.push(this.symbols[1]);
+          this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
 
         }
 
@@ -57,21 +58,15 @@
           // Clear the specific slot area to avoid ghosting
           context.clearRect(this.x, 0, slotWidth, height);
           this.y = this.y + this.speed;
-
-          //------------------------------------------
-          const end = this.startY - slotHeight*this.lengthOfWheel;
-          const start_slow = this.startY - slotHeight*(this.lengthOfWheel-10);
-
-          if (this.current > (this.lengthOfWheel-5) && Math.floor((this.y-this.startY) / slotHeight )> Math.floor(this.current)){
-            this.speed = Math.max(this.speed-20/5,0);
+          //slowdown effect
+          const stop_const = Math.floor(this.y - this.startY - slotHeight*((this.lengthOfWheel+1)-n_slow)-40);
+          if (stop_const > 0 && stop_const < (n_slow+1)*slotHeight){
+            this.speed = Math.max( (1-Math.floor(stop_const/slotHeight)/n_slow)*20,0);
           }
-          this.current = Math.floor((this.y-this.startY) / slotHeight);
-          //------------------------------------------------
-
-          for (var i = 0; i <= this.lengthOfWheel; i++) {
+          //spinning of wheel
+          for (var i = 0; i <= this.lengthOfWheel+1; i++) {
             context.fillText(this.roller[i], this.x, this.y - slotHeight * i);
           }
-          
         }
 
         this.init();
@@ -83,6 +78,20 @@
         this.slot2 = new slotColumn(slotWidth*4, 0, 0, 65);
         this.slot3 = new slotColumn(slotWidth*5, 0, 1, 80);
         this.interval;
+        
+        this.result = function() {
+          // do something
+          console.log(
+            this.slot1.winningNumber,
+            this.slot2.winningNumber,
+            this.slot3.winningNumber
+          )
+          console.log(
+            this.slot1.symbols[this.slot1.winningNumber],
+            this.slot1.symbols[this.slot2.winningNumber],
+            this.slot1.symbols[this.slot3.winningNumber]
+          )
+        }
 
         this.reset = function() {
           context.clearRect(0,0, width, height);
@@ -93,15 +102,17 @@
         };
 
         this.spin = function() {
-          // this.slot1.update();
-          // this.slot2.update();
-          // this.slot3.update();
+          this.slot1.update();
+          this.slot2.update();
+          this.slot3.update();
           this.interval = setInterval(() => {
             this.slot1.update();
             this.slot2.update();
             this.slot3.update();
           }, 10);
+          this.result();
         };
+
       };
 
       let slotmachine1 = new slotMachine();
