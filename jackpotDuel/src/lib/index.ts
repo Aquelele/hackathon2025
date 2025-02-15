@@ -5,6 +5,7 @@ export class GameManager {
 
 
     score: number = 0;
+    time: number
     timeLeft: number;
     element: HTMLDivElement | undefined;
 
@@ -19,6 +20,7 @@ export class GameManager {
 
     constructor(startTime: number) {
         this.timeLeft = startTime;
+        this.time = startTime;
         console.log("GameManager created");
     }
 
@@ -89,6 +91,15 @@ export class GameManager {
         //this.score += Math.floor(Math.random() * 100);
         this.isrolling = false;
         //console.log("Spun");
+    }
+
+    reset() {
+        this.score = 0;
+        this.timeLeft = this.time;
+        this.state = GameState.NOT_STARTED;
+        this.isrolling = false;
+        this.lastSpin = [0, 0, 0];
+        this.lastScore = 0;
     }
 
 
