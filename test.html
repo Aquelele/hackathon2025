@@ -6,40 +6,79 @@
     <title>Canvas Example</title>
   </head>
   <body>
-    <canvas id="myCanvas"></canvas>
+    <div style="display: flex;">
+    <canvas class="Player" id="Space"></canvas>
+    <canvas class="Player" id="ArrowUp"></canvas>
+    </div>
+  <canvas id="myCanvas"></canvas>
+
 
     <script>
-      const slotWidth = 150;
-      const slotHeight = 150;
-      const slotSpacing = 25;
-      const width = slotWidth*6 + slotSpacing*4;
-      const height = slotHeight*2;
-      const n_slow = 5; // how many fruits before stop
+      const SLOTWIDTH = 150;
+      const SLOTHEIGHT = 150;
+      const SLOTSPACING = 25;
+      const WIDTH = SLOTWIDTH*3 + SLOTSPACING*4;
+      const HEIGHT = SLOTHEIGHT*4;
+      const N_SLOW = 8; // how many fruits before stop
+      const SPEED = 16;
 
-      var canvas = document.getElementById('myCanvas');
-      var context = canvas.getContext('2d');
-      context.canvas.width  = width;
-      context.canvas.height = height;
+      p = document.querySelectorAll(".Player");
+      machines = [];
+      btns = [];
+      p.forEach((canvas, index) => {
+        context = canvas.getContext('2d');
+        button = context.canvas.id;
+        context.canvas.width  = WIDTH;
+        context.canvas.height = HEIGHT;
+        machines.push(new slotMachine(context, index*SLOTWIDTH));
+        btns.push(button);
+      });
+      document.addEventListener('keydown', function(event) {
+        let index = btns.indexOf(event.code);
+        if (index !== -1) {
+           //reset the screen when pressing
+           machines[index].spin();
+        }});
 
       function getRandomInt(max) {
           return Math.floor(Math.random() * max);
       }
 
-      function slotColumn(startX, startY, winningNumber, length){
-        this.startX = startX;
-        this.startY = startY;
+      function statusLight(context, startX, startY) {
         this.x = startX;
         this.y = startY;
+        // 0 = green, 1 = red
+        this.status = 0;
+
+        context.fillStyle = 'green';
+        context.fillRect(this.x, this.y, 50, 50);
+
+        this.update = function() {
+          context.clearRect(this.x, this.y, 50, 50);
+          context.fillStyle = this.status === 0 ? 'green' : 'red';
+          context.fillRect(this.x, this.y, 50, 50);
+          console.log("dadsa");
+        }
+
+      }
+
+
+      function slotColumn(context,startX, startY, winningNumber, length){
+        this.context = context;
+        this.startX = startX;
+        this.startY = startY;
         this.winningNumber = winningNumber;
         this.lengthOfWheel = length;
         this.symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
-        this.roller = [];
-        this.speed = 20;
-        this.current = 0;
         this.interval;
+
         this.init = function() {
-          context.font = '100px Arial';
-          for(var i = 0; i < this.lengthOfWheel; i++){
+          this.roller = [];
+          this.x = this.startX;
+          this.y = this.startY;
+          this.speed = SPEED;
+          this.context.font = '100px Arial';
+          for(let i = 0; i < this.lengthOfWheel; i++){
             this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
           };
           this.roller.push(this.symbols[this.winningNumber]);
@@ -47,94 +86,80 @@
 
         }
 
-        this.reset = function() {
-          this.roller = [];
-          this.x = this.startX;
-          this.y = this.startY;
-          this.init();
-        }
-
         this.update = function() {
           // Clear the specific slot area to avoid ghosting
-          context.clearRect(this.x, 0, slotWidth, height);
+          this.context.clearRect(this.x, 0, SLOTWIDTH, HEIGHT);
           this.y = this.y + this.speed;
           //slowdown effect
-          const stop_const = Math.floor(this.y - this.startY - slotHeight*((this.lengthOfWheel+1)-n_slow)-40);
-          if (stop_const > 0 && stop_const < (n_slow+1)*slotHeight){
-            this.speed = Math.max( (1-Math.floor(stop_const/slotHeight)/n_slow)*20,0);
+          const stop_const = Math.floor(this.y - this.startY - SLOTHEIGHT*((this.lengthOfWheel+1)-N_SLOW)-40);
+          if (stop_const > 0 && stop_const < (N_SLOW+1)*SLOTHEIGHT){
+            this.speed = Math.max( (1-Math.floor(stop_const/SLOTHEIGHT)/N_SLOW)*SPEED,0);
           }
           //spinning of wheel
-          for (var i = 0; i <= this.lengthOfWheel+1; i++) {
-            context.fillText(this.roller[i], this.x, this.y - slotHeight * i);
+          for (let i = 0; i < this.lengthOfWheel+2; i++) {
+            if (this.y - SLOTHEIGHT * i < SLOTHEIGHT*2.5){
+              this.context.fillText(this.roller[i], this.x, this.y - SLOTHEIGHT * i);
+            }
+            console.log(this.y - SLOTHEIGHT * i)
           }
-
+          this.context.clearRect(this.x, 2*SLOTHEIGHT, SLOTWIDTH, SLOTHEIGHT);
           if (this.speed == 0) {
             clearInterval(this.interval);
           }
         }
-
         
-        this.spin = function() {
+        this.spin = async function() {
+          this.init();
           this.interval = setInterval(() => {
             this.update();
           }, 10);
-          console.log(this.interval);
         }
 
         this.init();
       }
 
+      
 
-      function slotMachine(){
+      function slotMachine(context, placement){
         this.res = [2,0,1];
-        this.slot1 = new slotColumn(slotWidth*3, 0, this.res[0], 50);
-        this.slot2 = new slotColumn(slotWidth*4, 0, this.res[1], 65);
-        this.slot3 = new slotColumn(slotWidth*5, 0, this.res[2], 80);
+        this.slot1 = new slotColumn(context,placement, 0, this.res[0], 30);
+        this.slot2 = new slotColumn(context,placement + SLOTWIDTH, 0, this.res[1], 45);
+        this.slot3 = new slotColumn(context,placement + 2*SLOTWIDTH, 0, this.res[2], 60);
         this.cols = [this.slot1, this.slot2, this.slot3];
         this.interval;
+        this.spinning = false;
 
-        this.it = function(func) {
-          this.cols.forEach((item, index) => {
-            item[func]();
-          });
-        }
-        
-        this.result = function() {
-          // do something
-          console.log(this.res);
-          console.log(
-            this.slot1.symbols[this.slot1.winningNumber],
-            this.slot1.symbols[this.slot2.winningNumber],
-            this.slot1.symbols[this.slot3.winningNumber]
-          );
+        this.statusLight = new statusLight(context, placement + SLOTWIDTH, HEIGHT-250);
+
+        this.isDone = function() {
+          return this.cols.every(slot => slot.speed === 0);
         };
 
-        this.reset = function() {
-          clearInterval(this.interval);
-          this.it("reset");
+        this.spin = async function() {  
+          // Continuously check if all columns are done
+          if (this.spinning === false){
+            for (const item of this.cols) {
+              this.statusLight.status = 1;
+              item.spin(); 
+              this.statusLight.update();
+              
+            }
+          }
+          let checkInterval = setInterval(() => {
+            this.spinning = !this.isDone();
+            if (this.isDone()) {
+              this.statusLight.status = 0;
+              this.statusLight.update();
+              clearInterval(checkInterval);
+              return this.res;
+            }
+          }, 50);
         };
-
-        this.spin = function() {
-          this.it("spin");
-          this.result();
-        };
-
-
+      
       };
 
-      let slotmachine1 = new slotMachine();
-      let slotmachine2 = new slotMachine();
 
-      document.addEventListener('keydown', function(event) {
-        if (event.code === 'Space'){
-          //reset the screen when pressing
-          slotmachine1.reset();
-          slotmachine1.spin();
-        } else if(event.code === 'ArrowUp'){
-          slotmachine2.reset();
-          slotmachine2.spin();
-        };
-      });
+
     </script>
   </body>
 </html>
