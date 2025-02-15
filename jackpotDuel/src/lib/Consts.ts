@@ -6,3 +6,14 @@ export const HEIGHT: number = SLOTHEIGHT * 4;
 export const N_SLOW: number = 8; // how many fruits before stop
 export const SPEED: number = 16;
 export const SYMBOLS = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
+
+
+
+export const TIMESTEP = 10;
+export const GAMETIME = 30;
+
+
+export const JACKPOT2XVOL = 1;
+export const JACKPOT3XVOL = 1;
+export const WINSOUNDVOL = 0.8;
+export const BACKGROUNDVOL = 0.3;

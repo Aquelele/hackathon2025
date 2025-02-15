@@ -5,6 +5,7 @@
         display: flex;
         flex-direction: row;
     }
+
     .gameWindow {
         width: 50%;
         height: 100%;
@@ -17,7 +18,6 @@
         color: white;
         
     }
-
 
     .overlay {
         color: white;
@@ -46,7 +46,6 @@
         animation: particalAnimation 1.5s ease 0s 3;
     }
 
-   
     @keyframes flashAnimation {
     0% { background-color: rgb(58, 65, 72); background-color: rgb(28, 127, 51);}
     25% { background-color: rgb(28, 127, 51); background-color: rgb(58, 65, 72);}
@@ -71,6 +70,7 @@
         left: 0;
         z-index: 1;
     }
+
     .fireworks {
         width: 50%;
         height: 100%;
@@ -104,12 +104,9 @@
         z-index: -20;
     }
 
-    #p1Animation {
-    }
     #p2Animation {
         left: 50%;
     }
-
 </style>
 
 <script lang="ts">
@@ -118,18 +115,15 @@
     import { GameState } from '$lib/GameState';
     import { writable } from 'svelte/store';
     import { SlotMachine } from '$lib/SlotMachine';
-    import {WIDTH, HEIGHT, SPEED, SYMBOLS} from "$lib/Consts";
+    import {WIDTH, HEIGHT, TIMESTEP, SYMBOLS, GAMETIME,
+        JACKPOT2XVOL,JACKPOT3XVOL, WINSOUNDVOL, BACKGROUNDVOL
+    } from "$lib/Consts";
     import { Confetti } from "svelte-confetti"
     // Sound variables
     let backgroundMusic: HTMLAudioElement;
-    let spinSound: HTMLAudioElement;
     let winSound: HTMLAudioElement;
     let jackpot2x: HTMLAudioElement;
     let jackpot3x: HTMLAudioElement;
-
-    const timeStep = 10;
-
-    const gameTime = 30;
 
     class Game {
         playerList: GameManager[];
@@ -139,8 +133,8 @@
         currentGameState: GameState;
 
         constructor(m1: SlotMachine, m2: SlotMachine) {
-            this.player1 = new GameManager(gameTime, m1);
-            this.player2 = new GameManager(gameTime, m2);
+            this.player1 = new GameManager(GAMETIME, m1);
+            this.player2 = new GameManager(GAMETIME, m2);
 
             this.playerList = [this.player1, this.player2];
 
@@ -269,7 +263,7 @@
                         //console.log("Player Time is up");
                         player.state = GameState.OVER;
                    } else if (player.timeLeft > 0) {
-                        player.timeLeft -= 1/(10*timeStep);
+                        player.timeLeft -= 1/(10*TIMESTEP);
                    }
                 });
                 if (this.player1.state === GameState.OVER && this.player2.state === GameState.OVER) {
@@ -296,10 +290,6 @@
                     }
                     overlay.appendChild(restart);
 
-                    //console.log("Game Over");
-                    //console.log("P1 Score: " + this.player1.score);
-                    //console.log("P2 Score: " + this.player2.score);
-                    //console.log("Winner is: " + (this.player1.score > this.player2.score ? "P1" : "P2"));
                     this.currentGameState = GameState.OVER;
                 }
 
@@ -327,13 +317,12 @@
     let p2LastScore = writable(0);
     
 
-    let overlay: HTMLDivElement
-
-
+    let overlay: HTMLDivElement;
     let p1fireworks: HTMLCanvasElement;
     let p2fireworks: HTMLCanvasElement;
-
-    let p: NodeListOf<HTMLElement>
+    let p: NodeListOf<HTMLElement>;
+    let machines: SlotMachine[] = [];
+    let btns: string[] = [];
 
 
     onMount(() => {
@@ -347,10 +336,10 @@
         jackpot3x = new Audio("3x.mp3");
 
         // Boost volume
-        backgroundMusic.volume = 0.3; // 1.5x volume
-        winSound.volume = 0.8; // 2x volume
-        jackpot2x.volume = 1;
-        jackpot3x.volume = 1;
+        backgroundMusic.volume = BACKGROUNDVOL; // 1.5x volume
+        winSound.volume = WINSOUNDVOL; // 2x volume
+        jackpot2x.volume = JACKPOT2XVOL;
+        jackpot3x.volume = JACKPOT3XVOL;
 
         
 
@@ -396,7 +385,7 @@
             });
 
             game.gameLoop();
-        }, timeStep);
+        }, TIMESTEP);
 
         // Load PayPal SDK
         const script = document.createElement('script');
@@ -424,12 +413,6 @@
 
 
     });
-
-
-    const machines: SlotMachine[] = [];
-    const btns: string[] = [];
-
-
 </script>
 
 

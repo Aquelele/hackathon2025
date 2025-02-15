@@ -1,4 +1,4 @@
-import {WIDTH, HEIGHT, SPEED, SLOTHEIGHT, SLOTSPACING,SLOTWIDTH,N_SLOW, SYMBOLS} from "$lib/Consts";
+import {HEIGHT, SPEED, SLOTHEIGHT, SLOTWIDTH,N_SLOW, SYMBOLS} from "$lib/Consts";
 
 function getRandomInt(max: number): number {
     return Math.floor(Math.random() * max);

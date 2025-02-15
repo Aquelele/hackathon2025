@@ -1,8 +1,9 @@
 // place files you want to import through the `$lib` alias in this folder.
 import { GameState } from "./GameState";
-import { FruitEnum } from "./FruitEnum";
 import { SlotMachine } from "./SlotMachine";
 import { Fireworks } from 'fireworks-js'
+import {SYMBOLS} from "$lib/Consts";
+
 
 export class GameManager {
 
@@ -55,15 +56,7 @@ export class GameManager {
     }
 
     calculeteScore(score: number[]): number {
-        let total = 0;
-        let multiplier = 1;
-        let first = score[0];
-        let second = score[1];
-        let third = score[2];
-        let hist = [0,0,0,0,0,0,0,0,0,0];
-        console.log(score);
-
-
+        let hist = new Array(SYMBOLS.length).fill(0);
         score.forEach(n => {
             hist[n] += 1;
         });
@@ -71,7 +64,7 @@ export class GameManager {
         if (n>1){
             return Math.pow(10,n-1)*hist.indexOf(n);
         }
-        return Math.max(first, second, third);
+        return Math.max(...score);
     }
 
 
@@ -79,6 +72,7 @@ export class GameManager {
         this.isrolling = true;
         this.machine.reset();
         let result = await this.machine.spin()
+        this.isrolling = false;
 
         this.lastSpin = result;
         this.lastScore = this.calculeteScore(result);
@@ -94,7 +88,6 @@ export class GameManager {
             this.triggerFlashEffect('partical'); // For 3x partical
         }
 
-        this.isrolling = false;
     }
 
     triggerFlashEffect(type: 'flash' | 'partical') {
