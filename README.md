@@ -30,6 +30,6 @@ This project is licensed under Flashbangfirman AB @2025
 | --- | --- |
 | Projektledare | Axel Rönnberg |
 | Admin | Gabriel Matsson |
-| Synskadad grafisk designer | Ferdinand Kouhia |
+| Synskadad grafisk designer & Quant | Ferdinand Kouhia |
 | Öl & Bar | Eskil Brännerud |
 | Ekonomiansvarig | Adam Wennberg |
