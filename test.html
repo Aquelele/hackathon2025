@@ -36,7 +36,7 @@
         this.roller = [];
         this.speed = 20;
         this.current = 0;
-
+        this.interval;
         this.init = function() {
           context.font = '100px Arial';
           for(var i = 0; i < this.lengthOfWheel; i++){
@@ -67,6 +67,18 @@
           for (var i = 0; i <= this.lengthOfWheel+1; i++) {
             context.fillText(this.roller[i], this.x, this.y - slotHeight * i);
           }
+
+          if (this.speed == 0) {
+            clearInterval(this.interval);
+          }
+        }
+
+        
+        this.spin = function() {
+          this.interval = setInterval(() => {
+            this.update();
+          }, 10);
+          console.log(this.interval);
         }
 
         this.init();
@@ -74,44 +86,39 @@
 
 
       function slotMachine(){
-        this.slot1 = new slotColumn(slotWidth*3, 0, 2, 50);
-        this.slot2 = new slotColumn(slotWidth*4, 0, 0, 65);
-        this.slot3 = new slotColumn(slotWidth*5, 0, 1, 80);
+        this.res = [2,0,1];
+        this.slot1 = new slotColumn(slotWidth*3, 0, this.res[0], 50);
+        this.slot2 = new slotColumn(slotWidth*4, 0, this.res[1], 65);
+        this.slot3 = new slotColumn(slotWidth*5, 0, this.res[2], 80);
+        this.cols = [this.slot1, this.slot2, this.slot3];
         this.interval;
+
+        this.it = function(func) {
+          this.cols.forEach((item, index) => {
+            item[func]();
+          });
+        }
         
         this.result = function() {
           // do something
-          console.log(
-            this.slot1.winningNumber,
-            this.slot2.winningNumber,
-            this.slot3.winningNumber
-          )
+          console.log(this.res);
           console.log(
             this.slot1.symbols[this.slot1.winningNumber],
             this.slot1.symbols[this.slot2.winningNumber],
             this.slot1.symbols[this.slot3.winningNumber]
-          )
-        }
+          );
+        };
 
         this.reset = function() {
-          context.clearRect(0,0, width, height);
           clearInterval(this.interval);
-          this.slot1.reset();
-          this.slot2.reset();
-          this.slot3.reset();
+          this.it("reset");
         };
 
         this.spin = function() {
-          this.slot1.update();
-          this.slot2.update();
-          this.slot3.update();
-          this.interval = setInterval(() => {
-            this.slot1.update();
-            this.slot2.update();
-            this.slot3.update();
-          }, 10);
+          this.it("spin");
           this.result();
         };
+
 
       };
 
