@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Canvas Example</title>
-    
   </head>
   <body>
     <div style="display: flex;">
@@ -23,9 +22,7 @@
       const N_SLOW = 8; // how many fruits before stop
       const SPEED = 16;
 
-
-      // CanvasWidth = 
-
+      var audio = new Audio('click.mp3');
       
 
       p = document.querySelectorAll(".Player");
@@ -44,8 +41,6 @@
         if (index !== -1) {
            //reset the screen when pressing
            machines[index].spin();
-          
-      
         }});
 
       function getRandomInt(max) {
@@ -119,7 +114,8 @@
           }
         }
         
-        this.spin = function() {
+        this.spin = async function() {
+          this.init();
           this.running = true;
         }
 
