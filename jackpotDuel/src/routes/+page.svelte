@@ -1,7 +1,7 @@
 <style>
     .gameContainer {
         width: 100%;
-        height: 100%;
+        height: 70%;
         display: flex;
         flex-direction: row;
     }
@@ -9,14 +9,32 @@
         width: 50%;
         height: 100%;
         flex: 1;
+        margin: 10px 50px 0 50px;
 
     }
     #player1 {
         background-color: white;
     }
     #player2 {
-        background-color: white;
+        background-color: orchid;
     }
+
+    .overlay {
+        display: none;
+        flex-direction: column;
+        top: 15%;
+        left: 50%;
+        transform: translate(-50%, -15%);
+        position: fixed;
+        width: 50%;
+        height: 50%;
+        background-color: rgba(0, 0, 0, 0.2);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+        border-radius: 15px;
+    }
+
 </style>
 
 <script lang="ts">
@@ -24,15 +42,21 @@
     import { GameManager } from '$lib/index';
     import { GameState } from '$lib/GameState';
     import { writable } from 'svelte/store';
+
+
+    const gameTime = 3;
     class Game {
+        p: GameManager[];
         p1: GameManager;
         p2: GameManager;
 
         currentGameState: GameState;
 
         constructor(/* p1: HTMLDivElement, p2: HTMLDivElement */) {
-            this.p1 = new GameManager(60);
-            this.p2 = new GameManager(60);
+            this.p1 = new GameManager(gameTime);
+            this.p2 = new GameManager(gameTime);
+
+            this.p = [this.p1, this.p2];
 
             this.currentGameState = GameState.NOT_STARTED;
 
@@ -46,19 +70,22 @@
 
         startGame() {
             this.currentGameState = GameState.RUNNING;
+            for (let player of this.p) {
+                player.startGame();
+            }
         }
 
 
         async handleKeyPress(event: KeyboardEvent) {
             if (event.key === 'a') {
-                if (!this.p1.isrolling) {
+                if (!this.p1.isrolling && this.p1.state === GameState.RUNNING) {
                     p1Rolling.set(true);
                     await this.p1.spin();
                     p1Rolling.set(false);
                     p1Score.set(this.p1.score);
                 }
-            } else if (event.key === 'l') {
-                if (!this.p2.isrolling) {
+            } if (event.key === 'l') {
+                if (!this.p2.isrolling && this.p2.state === GameState.RUNNING) {
                     p2Rolling.set(true);
                     await this.p2.spin();
                     p2Rolling.set(false);
@@ -70,11 +97,40 @@
 
         gameLoop() {
             if (this.currentGameState === GameState.RUNNING) {
-                this.p1.timeLeft--;
-                this.p2.timeLeft--;
+                this.p.forEach(player => {
+                   if (player.timeLeft <= 0) {
+                        console.log("Player Time is up");
+                        player.state = GameState.OVER;
+                   } else {
+                        player.timeLeft--;
+                   }
+                });
+                if (this.p1.state === GameState.OVER && this.p2.state === GameState.OVER) {
+                    overlay.style.display = "flex";
+                    let gameover = document.createElement('h1');
+                    gameover.innerHTML = "Game Over";
+                    overlay.appendChild(gameover);
+                    let p1Score = document.createElement('h2');
+                    p1Score.innerHTML = "P1 Score: " + this.p1.score;
+                    overlay.appendChild(p1Score);
+                    let p2Score = document.createElement('h2');
+                    p2Score.innerHTML = "P2 Score: " + this.p2.score;
+                    overlay.appendChild(p2Score);
+                    let winner = document.createElement('h2');
+                    winner.innerHTML = "Winner is: " + (this.p1.score > this.p2.score ? "P1" : "P2");
+                    overlay.appendChild(winner);
+
+                    console.log("Game Over");
+                    console.log("P1 Score: " + this.p1.score);
+                    console.log("P2 Score: " + this.p2.score);
+                    console.log("Winner is: " + (this.p1.score > this.p2.score ? "P1" : "P2"));
+                    this.currentGameState = GameState.OVER;
+                }
+
                 p1Time.set(this.p1.timeLeft);
                 p2Time.set(this.p2.timeLeft);
-                
+                p1GameState.set((this.p1.state === GameState.OVER ? "OVER" : "GAMIN"));
+                p2GameState.set((this.p2.state === GameState.OVER ? "OVER" : "GAMIN"));
             }
             // Update the score in the HTML
         }
@@ -83,9 +139,14 @@
     let p1Score = writable(0);
     let p1Time = writable(0);
     let p1Rolling = writable(false);
+    let p1GameState = writable("NOT STARTED");
     let p2Score = writable(0);
     let p2Time = writable(0);
     let p2Rolling = writable(false);
+    let p2GameState = writable("NOT STARTED");
+
+    let overlay: HTMLDivElement
+
 
     
     let game = new Game();
@@ -94,6 +155,8 @@
     onMount(() => {
         let player1 = document.getElementById('player1') as HTMLDivElement;
         let player2 = document.getElementById('player2') as HTMLDivElement;
+
+        overlay = document.getElementById('overlay') as HTMLDivElement;
 
         game.bind(player1, player2);
 
@@ -104,19 +167,56 @@
             
             game.gameLoop();
         }, 1000);
+
+        // Load PayPal SDK
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=ATbaGjuzdgH-5iIoHHgXu66wqjCQmWXF8WQyWE0dh0SFifPujo7XfOwH3L6gTx_6ExMnJ_F8TUQMGQck&currency=USD`;
+        script.onload = () => {
+            paypal.Buttons({
+                createOrder: (data, actions) => {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: '10.00' // Set the payment amount
+                            }
+                        }]
+                    });
+                },
+                onApprove: (data, actions) => {
+                    return actions.order.capture().then(details => {
+                        alert('Transaction completed by ' + details.payer.name.given_name);
+                        // You can add additional logic here, like updating your database
+                    });
+                }
+            }).render('#paypal-button-container');
+        };
+        document.body.appendChild(script)
+
+
+
     });
 
 </script>
 
+<div class="overlay" id="overlay">
+</div>
 <div class="gameContainer">
     <div class="gameWindow" id="player1">
         <h1>P1 SCORE IS {$p1Score}</h1> 
         <h2>P1 time {$p1Time}</h2>
         <h1>ROLLING {$p1Rolling}</h1>
+        <h1>GameState {$p1GameState}</h1>
     </div>
     <div class="gameWindow" id="player2">
         <h1>P2 SCORE IS {$p2Score}</h1>
         <h2>P2 time {$p2Time}</h2>
         <h1>ROLLING {$p2Rolling}</h1>
+        <h1>GameState {$p2GameState}</h1>
+    </div>
+</div>
+<div class="payments">
+    <!-- PayPal Button Container -->
+    <div class="paypal-button-container">
+        <div id="paypal-button-container"></div>
     </div>
 </div>

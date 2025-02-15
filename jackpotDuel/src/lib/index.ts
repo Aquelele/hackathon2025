@@ -1,5 +1,5 @@
 // place files you want to import through the `$lib` alias in this folder.
-
+import { GameState } from "./GameState";
 export class GameManager {
 
 
@@ -8,6 +8,8 @@ export class GameManager {
     element: HTMLDivElement | undefined;
 
     isrolling: boolean = false;
+
+    state: GameState = GameState.NOT_STARTED;
 
 
 
@@ -27,6 +29,11 @@ export class GameManager {
 
     getScore() {
         return this.score;
+    }
+
+    startGame() {
+        this.state = GameState.RUNNING;
+        console.log("Game Started");
     }
 
     async spin() {
