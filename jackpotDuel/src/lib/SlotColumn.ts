@@ -1,10 +1,4 @@
-const SLOTWIDTH: number = 150;
-const SLOTHEIGHT: number = 150;
-const SLOTSPACING: number = 25;
-const WIDTH: number = SLOTWIDTH * 3 + SLOTSPACING * 4;
-const HEIGHT: number = SLOTHEIGHT * 4;
-const N_SLOW: number = 8; // how many fruits before stop
-const SPEED: number = 16;
+import {WIDTH, HEIGHT, SPEED, SLOTHEIGHT, SLOTSPACING,SLOTWIDTH,N_SLOW, SYMBOLS} from "$lib/Consts";
 
 function getRandomInt(max: number): number {
     return Math.floor(Math.random() * max);
@@ -17,12 +11,11 @@ export class SlotColumn {
     startY: number;
     winningNumber: number;
     lengthOfWheel: number;
-    symbols: string[];
     running: boolean;
-    roller: string[];
-    x: number;
-    y: number;
-    speed: number;
+    roller: string[] = [];
+    x: number = 0;
+    y: number = 0;
+    speed: number = 0;
 
     constructor(context: CanvasRenderingContext2D, startX: number, startY: number, winningNumber: number, length: number) {
         this.context = context;
@@ -30,22 +23,26 @@ export class SlotColumn {
         this.startY = startY;
         this.winningNumber = winningNumber;
         this.lengthOfWheel = length;
-        this.symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
         this.running = false;
-        this.roller = [];
-        this.x = startX;
-        this.y = startY;
-        this.speed = SPEED;
+        this.roller;
         this.init();
+        for (let i = 0; i < 3; i++) {
+            this.context.fillText(this.roller[i], this.x, this.y - SLOTHEIGHT * (i-2));
+        }
+        this.context.clearRect(this.x, 2 * SLOTHEIGHT, SLOTWIDTH, SLOTHEIGHT);
     }
 
     init(): void {
+        this.roller = [];
+        this.x = this.startX;
+        this.y = this.startY;
+        this.speed = SPEED;
         this.context.font = '100px Arial';
         for (let i = 0; i < this.lengthOfWheel; i++) {
-            this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
+            this.roller.push(SYMBOLS[getRandomInt(SYMBOLS.length)]);
         }
-        this.roller.push(this.symbols[this.winningNumber]);
-        this.roller.push(this.symbols[getRandomInt(this.symbols.length)]);
+        this.roller.push(SYMBOLS[this.winningNumber]);
+        this.roller.push(SYMBOLS[getRandomInt(SYMBOLS.length)]);
     }
 
     update(): void {

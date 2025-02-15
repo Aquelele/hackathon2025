@@ -2,6 +2,7 @@
 import { GameState } from "./GameState";
 import { FruitEnum } from "./FruitEnum";
 import { SlotMachine } from "./SlotMachine";
+import { Fireworks } from 'fireworks-js'
 
 export class GameManager {
 
@@ -9,6 +10,7 @@ export class GameManager {
     time: number
     timeLeft: number;
     element: HTMLDivElement | undefined;
+    animation: HTMLDivElement | undefined;
 
     isrolling: boolean = false;
 
@@ -19,20 +21,29 @@ export class GameManager {
 
     machine: SlotMachine
 
+    fireworksCanvas: HTMLCanvasElement | undefined;
+
+    fireworks: Fireworks | undefined
+
+
     constructor(startTime: number, machine: SlotMachine) {
         this.machine = machine
         this.timeLeft = startTime;
         this.time = startTime;
-        console.log("GameManager created");
     }
 
     bindElement(element: HTMLDivElement) {
         this.element = element;
     }
 
+    bindFireworks(element: HTMLCanvasElement) {
+        this.fireworksCanvas = element;
+
+        this.fireworks = new Fireworks(this.fireworksCanvas, { /* options */ });
+    }
+
     inscreseScore(amount: number) {
         this.score += amount;
-        console.log("Score: ", this.score);
     }
 
     getScore() {
@@ -41,62 +52,71 @@ export class GameManager {
 
     startGame() {
         this.state = GameState.RUNNING;
-        console.log("Game Started");
     }
 
-    calculeteScore(socre: number[]): number {
+    calculeteScore(score: number[]): number {
         let total = 0;
         let multiplier = 1;
-        let first = socre[0];
-        let second = socre[1];
-        let third = socre[2];
+        let first = score[0];
+        let second = score[1];
+        let third = score[2];
+        let hist = [0,0,0,0,0,0,0,0,0,0];
+        console.log(score);
 
-        if (first == second && second == third) {
-            multiplier = 100;
-            return multiplier * first;
-        } else if (first == second || second == third || first == third) {
-            multiplier = 10;
-            if (first == second || first == third) {
-                return multiplier * first;
-            } else if (second == third) {
-                return multiplier * second;
-            } else {
-                return multiplier * third;
-            }
-        }
 
-        if (first > second && first > third) {
-            return first;
+        score.forEach(n => {
+            hist[n] += 1;
+        });
+        let n = Math.max(...hist);
+        if (n>1){
+            return Math.pow(10,n-1)*hist.indexOf(n);
         }
-        if (second > first && second > third) {
-            return second;
-        }
-        if (third > first && third > second) {
-            return third;
-        }
-
-        return 0; // Default return value if no conditions are met
+        return Math.max(first, second, third);
     }
 
 
     async spin() {
-        //console.log("Spinning");
         this.isrolling = true;
-
-        let test = await this.machine.spin()
-
-        console.log(test)
-
-        let result = [Math.floor(Math.random() * 9), Math.floor(Math.random() * 9), Math.floor(Math.random() * 9)];
-        console.log("Result: ", result);
+        this.machine.reset();
+        let result = await this.machine.spin()
 
         this.lastSpin = result;
         this.lastScore = this.calculeteScore(result);
-        console.log("Score: ", this.lastScore);
         this.score += this.lastScore
-        //this.score += Math.floor(Math.random() * 100);
+
+        // 2 x combo
+        if (this.lastScore > 9 && this.lastScore < 100) {
+            this.triggerFlashEffect('flash'); // For 2x flash
+        }
+
+        // 3 x combo
+        if (this.lastScore > 100) {
+            this.triggerFlashEffect('partical'); // For 3x partical
+        }
+
         this.isrolling = false;
-        //console.log("Spun");
+    }
+
+    triggerFlashEffect(type: 'flash' | 'partical') {
+        if (this.fireworks) {
+            this.fireworks.start();
+        }
+        if (this.animation) {
+            //const fireworks = new Fireworks(this.element, { /* options */ });
+            //fireworks.start();
+
+
+            // Add the respective class for the effect
+            this.animation.classList.add(type);
+    
+            // Determine the duration based on the effect type (1.5s * 2 for flash, 1.5s * 3 for partical)
+            const duration = type === 'flash' ? 3000 : 4500; // 3s for flash, 4.5s for partical
+    
+            // Remove the class after the animation completes
+            setTimeout(() => {
+                this.animation?.classList.remove(type);
+            }, duration);
+        }
     }
 
     reset() {
@@ -106,7 +126,8 @@ export class GameManager {
         this.isrolling = false;
         this.lastSpin = [0, 0, 0];
         this.lastScore = 0;
+        if (this.fireworks) {
+            this.fireworks.stop(true)
+        }
     }
-
-
 }
