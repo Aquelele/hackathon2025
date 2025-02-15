@@ -42,9 +42,14 @@
     import { GameManager } from '$lib/index';
     import { GameState } from '$lib/GameState';
     import { writable } from 'svelte/store';
+    import { SlotMachine } from '$lib/SlotMachine';
 
+
+
+    const timeStep = 10;
 
     const gameTime = 30;
+
     class Game {
         p: GameManager[];
         p1: GameManager;
@@ -52,9 +57,9 @@
 
         currentGameState: GameState;
 
-        constructor(/* p1: HTMLDivElement, p2: HTMLDivElement */) {
-            this.p1 = new GameManager(gameTime);
-            this.p2 = new GameManager(gameTime);
+        constructor(m1: SlotMachine, m2: SlotMachine) {
+            this.p1 = new GameManager(gameTime, m1);
+            this.p2 = new GameManager(gameTime, m2);
 
             this.p = [this.p1, this.p2];
 
@@ -93,7 +98,9 @@
             if (event.key === 'a') {
                 if (!this.p1.isrolling && this.p1.state === GameState.RUNNING) {
                     p1Rolling.set(true);
+
                     await this.p1.spin();
+
                     p1Rolling.set(false);
                     p1Score.set(this.p1.score);
                     p1LastResult.set(this.p1.lastSpin);
@@ -102,7 +109,9 @@
             } if (event.key === 'l') {
                 if (!this.p2.isrolling && this.p2.state === GameState.RUNNING) {
                     p2Rolling.set(true);
+
                     await this.p2.spin();
+
                     p2Rolling.set(false);
                     p2Score.set(this.p2.score);
                     p2LastResult.set(this.p2.lastSpin);
@@ -138,7 +147,7 @@
                         console.log("Player Time is up");
                         player.state = GameState.OVER;
                    } else if (player.timeLeft > 0) {
-                        player.timeLeft--;
+                        player.timeLeft -= 1/(10*timeStep);
                    }
                 });
                 if (this.p1.state === GameState.OVER && this.p2.state === GameState.OVER) {
@@ -171,8 +180,8 @@
                     this.currentGameState = GameState.OVER;
                 }
 
-                p1Time.set(this.p1.timeLeft);
-                p2Time.set(this.p2.timeLeft);
+                p1Time.set(Math.floor(this.p1.timeLeft));
+                p2Time.set(Math.floor(this.p2.timeLeft));
                 p1GameState.set((this.p1.state === GameState.OVER ? "OVER" : "GAMIN"));
                 p2GameState.set((this.p2.state === GameState.OVER ? "OVER" : "GAMIN"));
             }
@@ -197,11 +206,25 @@
     let overlay: HTMLDivElement
 
 
-    
+
     let game = new Game();
+
+    let p: NodeListOf<HTMLElement>
 
 
     onMount(() => {
+        p = document.querySelectorAll(".Player");
+
+        p.forEach((canvas: HTMLElement, index: number) => {
+            const context: CanvasRenderingContext2D = (canvas as HTMLCanvasElement).getContext('2d')!;
+            const button: string = context.canvas.id;
+            context.canvas.width = WIDTH;
+            context.canvas.height = HEIGHT;
+            machines.push(new SlotMachine(context, 0));
+            btns.push(button);
+        });
+
+
         let player1 = document.getElementById('player1') as HTMLDivElement;
         let player2 = document.getElementById('player2') as HTMLDivElement;
 
@@ -211,11 +234,16 @@
 
         game.startGame();
 
+
+
         window.addEventListener('keyup', game.handleKeyPress);
         setInterval(() => {
-            
+            machines.forEach(machine => {
+                machine.update();
+            });
+
             game.gameLoop();
-        }, 1000);
+        }, timeStep);
 
         // Load PayPal SDK
         const script = document.createElement('script');
@@ -245,7 +273,23 @@
 
     });
 
+    const SLOTWIDTH: number = 150;
+    const SLOTHEIGHT: number = 150;
+    const SLOTSPACING: number = 25;
+    const WIDTH: number = SLOTWIDTH * 3 + SLOTSPACING * 4;
+    const HEIGHT: number = SLOTHEIGHT * 4;
+    const N_SLOW: number = 8; // how many fruits before stop
+    const SPEED: number = 16;
+
+
+    const machines: SlotMachine[] = [];
+    const btns: string[] = [];
+
+
+
 </script>
+
+
 
 <div class="overlay" id="overlay">
 </div>
@@ -256,6 +300,7 @@
         <h1>ROLLING {$p1Rolling}</h1>
         <h1>GameState {$p1GameState}</h1>
         <h1>last result: {$p1LastResult}, Score: {$p1LastScore}</h1>
+        <canvas class="Player" id="a"></canvas>
     </div>
     <div class="gameWindow" id="player2">
         <h1>P2 SCORE IS {$p2Score}</h1>
@@ -263,7 +308,9 @@
         <h1>ROLLING {$p2Rolling}</h1>
         <h1>GameState {$p2GameState}</h1>
         <h1>last result: {$p2LastResult}, Score: {$p2LastScore}</h1>
+        <canvas class="Player" id="l"></canvas>
     </div>
+    
 </div>
 <div class="payments">
     <!-- PayPal Button Container -->

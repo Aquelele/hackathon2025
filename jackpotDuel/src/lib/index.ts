@@ -1,8 +1,9 @@
 // place files you want to import through the `$lib` alias in this folder.
 import { GameState } from "./GameState";
 import { FruitEnum } from "./FruitEnum";
-export class GameManager {
+import { SlotMachine } from "./SlotMachine";
 
+export class GameManager {
 
     score: number = 0;
     time: number
@@ -16,9 +17,10 @@ export class GameManager {
     lastSpin: number[] = [0, 0, 0];
     lastScore: number = 0;
 
+    machine: SlotMachine
 
-
-    constructor(startTime: number) {
+    constructor(startTime: number, machine: SlotMachine) {
+        this.machine = machine
         this.timeLeft = startTime;
         this.time = startTime;
         console.log("GameManager created");
@@ -80,7 +82,11 @@ export class GameManager {
     async spin() {
         //console.log("Spinning");
         this.isrolling = true;
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        let test = await this.machine.spin()
+
+        console.log(test)
+
         let result = [Math.floor(Math.random() * 9), Math.floor(Math.random() * 9), Math.floor(Math.random() * 9)];
         console.log("Result: ", result);
 
