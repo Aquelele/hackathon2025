@@ -8,9 +8,11 @@ export const SPEED: number = 16;
 export const SYMBOLS = ['🍒', '🍋', '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'];
 
 
+// , '🍊', '🍉', '🍇', '🍓', '⭐', '🔔', '🤠', '🤤'
+
 
 export const TIMESTEP = 10;
-export const GAMETIME = 30;
+export const GAMETIME = 60;
 
 
 export const JACKPOT2XVOL = 1;

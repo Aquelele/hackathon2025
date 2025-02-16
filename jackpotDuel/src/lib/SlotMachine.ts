@@ -1,6 +1,6 @@
 import { SlotColumn } from "./SlotColumn";
 import {StatusLight} from "./StatusLight";
-import {SLOTWIDTH, HEIGHT} from "$lib/Consts";
+import {SLOTWIDTH, HEIGHT, SYMBOLS} from "$lib/Consts";
 
 export class SlotMachine {
     res: number[];
@@ -13,13 +13,34 @@ export class SlotMachine {
     statusLight: StatusLight;
 
     constructor(context: CanvasRenderingContext2D, placement: number) {
-        this.res = [0, 0, 0];
-        this.slot1 = new SlotColumn(context, placement, 0, this.res[0], 30);
-        this.slot2 = new SlotColumn(context, placement + SLOTWIDTH, 0, this.res[1], 45);
-        this.slot3 = new SlotColumn(context, placement + 2 * SLOTWIDTH, 0, this.res[2], 60);
+
+        // Generate 3 random numbers between 20 and 90 and store them in a new variable
+        this.res = this.generateRandomNumbers();
+
+        // Sort the random numbers so the lowest is first, mid is second, and largest is third
+        this.res.sort((a, b) => a - b);
+
+        this.slot1 = new SlotColumn(context, placement, 0, this.res[0], this.res[0]);
+        this.slot2 = new SlotColumn(context, placement + SLOTWIDTH, 0, this.res[1], this.res[1]);
+        this.slot3 = new SlotColumn(context, placement + 2 * SLOTWIDTH, 0, this.res[2], this.res[2]);
+
         this.cols = [this.slot1, this.slot2, this.slot3];
         this.spinning = false;
         this.statusLight = new StatusLight(context, placement + SLOTWIDTH * 1.5, HEIGHT - 250, 50);
+    }
+
+    // Helper function to generate 3 random numbers between 20 and 90
+    private generateRandomNumbers(): number[] {
+        const numbers: number[] = [];
+        for (let i = 0; i < 3; i++) {
+            numbers.push(this.getRandomNumber(20, 90));
+        }
+        return numbers;
+    }
+
+    // Helper function to generate a random number between min and max (inclusive)
+    private getRandomNumber(min: number, max: number): number {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     not_spinning(): boolean {
@@ -37,9 +58,6 @@ export class SlotMachine {
     }
 
     async spin(): Promise<number[]> {
-        if (this.spinning){
-            return [];
-        }
         //initialize to know when done
         this.init_spin_checker();
         this.statusLight.toggle();
@@ -66,7 +84,8 @@ export class SlotMachine {
 
     reset(): void {
         //get new result
-        this.res = [Math.floor(Math.random() * 9), Math.floor(Math.random() * 9), Math.floor(Math.random() * 9)];
+        this.res = [this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1)]
+        //this.res = [Math.floor(Math.random() * SYMBOLS.length), Math.floor(Math.random() * SYMBOLS.length), Math.floor(Math.random() * SYMBOLS.length)];
         //update each column
         this.cols.forEach((col, index) => {
             col.winningNumber = this.res[index];

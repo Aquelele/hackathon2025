@@ -19,6 +19,32 @@
         
     }
 
+    #fabio {
+        width: 10%;
+        height: 20%;
+        position: absolute;
+        left : 45%;
+        top : 25%;
+        background-image: url("fabio_caged.png");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+        z-index: 30;
+    }
+
+    #fabio_uncaged {
+        width: 10%;
+        height: 20%;
+        position: absolute;
+        left : 45%;
+        top : 25%;
+        background-image: url("fabio_uncaged.png");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+        z-index: 31;
+    }
+
     .overlay {
         color: white;
         display: none;
@@ -124,6 +150,9 @@
     let winSound: HTMLAudioElement;
     let jackpot2x: HTMLAudioElement;
     let jackpot3x: HTMLAudioElement;
+    let fabio_sound: HTMLAudioElement;
+
+    let showConfetti = false;
 
 
     let p1Score = writable(0);
@@ -145,6 +174,11 @@
     let p2fireworks: HTMLCanvasElement;
     let players: NodeListOf<HTMLElement>;
 
+    let fabioUnCaged: boolean = false;
+    let fabioElement : HTMLElement;
+
+    let fabioId = writable("fabio");
+
     class Game {
         playerList: GameManager[];
         currentGameState: GameState;
@@ -156,22 +190,41 @@
             rolling : Writable,
             gameState : Writable,
             lastResult : Writable,
-            lastScore : Writable) {
+            lastScore : Writable,
+            ) {
             if (!gm.isrolling && gm.state === GameState.RUNNING) {
                 rolling.set(true);
                 await gm.spin();
                 rolling.set(false);
 
                 // 2 x combo
-                if (this.playerList[0].lastScore > 9 && gm.lastScore < 100) {
+                if (gm.double(gm.lastSpin)) {
                     winSound.play();
                     jackpot2x.play();
                 }
 
                 // 3 x combo
-                if (gm.lastScore > 100) {
+                if (gm.triple(gm.lastSpin)) {
                     winSound.play();
                     jackpot3x.play();
+                }
+
+                //Fabio
+                if(gm.score >= 20){
+                    if(!(fabioUnCaged)){
+                        fabio_sound.play();
+                        fabioId.set("fabio_uncaged");
+                        fabioUnCaged = true;
+                        gm.fabio_mul = 2;
+                        fabio_sound.play();
+
+                        showConfetti = true;
+                        // Optionally, hide confetti after a duration
+                        setTimeout(() => {
+                        showConfetti = false;
+                        }, 3000); // Confetti will be visible for 3 seconds
+
+                    }
                 }
 
                 score.set(gm.score);
@@ -205,7 +258,6 @@
                 let sl = new SlotMachine(context, 25);
                 this.playerList.push(new GameManager(GAMETIME,sl))
             });
-            console.log(this.playerList);
             
             this.handleKeyPress = this.handleKeyPress.bind(this);
             window.addEventListener('keyup', this.handleKeyPress);
@@ -253,6 +305,7 @@
         resetGame() {
             this.playerList[0].reset();
             this.playerList[1].reset();
+            fabioUnCaged = false;
 
             p1Score.set(this.playerList[0].score);
             p1Time.set(this.playerList[0].timeLeft);
@@ -328,6 +381,7 @@
         winSound = new Audio("jackpot.mp3"); 
         jackpot2x = new Audio("2x.mp3");
         jackpot3x = new Audio("3x.mp3");
+        fabio_sound = new Audio("fabio.mp3");
 
         // Boost volume
         backgroundMusic.volume = BACKGROUNDVOL; // 1.5x volume
@@ -403,6 +457,22 @@
  pointer-events: none;">
  <Confetti x={[-5, 5]} y={[0, 0.1]} delay={[500, 2000]} infinite duration=5000 amount=100 fallDistance="100vh" />
 </div>
+
+{#if showConfetti}
+<div
+style="
+position: absolute;
+top: 45vh;
+left: 45%;
+height: 10vh;
+width: 10vw;">
+<Confetti noGravity x={[-1, 1]} y={[-1, 1]} delay={[0, 50]} duration=1000 colorRange={[0, 120]} />
+<Confetti noGravity x={[-1, 1]} y={[-1, 1]} delay={[550, 550]} duration=1000 colorRange={[120, 240]} />
+<Confetti noGravity x={[-1, 1]} y={[-1, 1]} delay={[1000, 1050]} duration=1000 colorRange={[240, 360]} />
+</div>
+{/if}
+
+
 <div class="gameContainer">
     <div class="gameWindow" id="player1">
         <div class="comboAnimtion" id="p1Animation"></div>
@@ -423,6 +493,9 @@
             <canvas class="Player" id="l"></canvas>
             
         </div>
+    </div>
+
+    <div class="fabio" id={$fabioId} bind:this={fabioElement}>
     </div>
     
 </div>
