@@ -1,6 +1,6 @@
 import { SlotColumn } from "./SlotColumn";
 import {StatusLight} from "./StatusLight";
-import {SLOTWIDTH, HEIGHT, SYMBOLS} from "$lib/Consts";
+import {SLOTWIDTH, HEIGHT, SYMBOLS, RIGGING} from "$lib/Consts";
 
 export class SlotMachine {
     res: number[];
@@ -84,7 +84,8 @@ export class SlotMachine {
 
     reset(): void {
         //get new result
-        this.res = [this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1)]
+        this.res = RIGGING[Math.floor(Math.random() * RIGGING.length)];
+        //this.res = [this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1), this.getRandomNumber(0, SYMBOLS.length -1)]
         //this.res = [Math.floor(Math.random() * SYMBOLS.length), Math.floor(Math.random() * SYMBOLS.length), Math.floor(Math.random() * SYMBOLS.length)];
         //update each column
         this.cols.forEach((col, index) => {
