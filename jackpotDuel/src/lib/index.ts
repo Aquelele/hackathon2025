@@ -3,6 +3,7 @@ import { GameState } from "./GameState";
 import { SlotMachine } from "./SlotMachine";
 import { Fireworks } from 'fireworks-js'
 import {SYMBOLS} from "$lib/Consts";
+import type { Writable } from "svelte/store";
 
 
 export class GameManager {
@@ -17,15 +18,19 @@ export class GameManager {
     fabio_mul : number = 1;
     lastSpin: number[] = [0, 0, 0];
     lastScore: number = 0;
-    machine: SlotMachine
+    machine: SlotMachine;
     fireworksCanvas: HTMLCanvasElement | undefined;
-    fireworks: Fireworks | undefined
+    fireworks: Fireworks | undefined;
+    button : string;
+    player_obj : Writable;
 
 
-    constructor(startTime: number, machine: SlotMachine) {
+    constructor(startTime: number, machine: SlotMachine, button : string, player_obj : writable) {
         this.machine = machine
         this.timeLeft = startTime;
         this.time = startTime;
+        this.button = button;
+        this.player_obj = player_obj;
     }
 
     bindElement(element: HTMLDivElement) {

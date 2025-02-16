@@ -139,7 +139,7 @@
     import { onMount } from 'svelte';
     import { GameManager } from '$lib/index';
     import { GameState } from '$lib/GameState';
-    import { writable, type Writable } from 'svelte/store';
+    import {writable, type Writable } from 'svelte/store';
     import { SlotMachine } from '$lib/SlotMachine';
     import {WIDTH, HEIGHT, TIMESTEP, SYMBOLS, GAMETIME,
         JACKPOT2XVOL,JACKPOT3XVOL, WINSOUNDVOL, BACKGROUNDVOL
@@ -154,20 +154,28 @@
 
     let showConfetti = false;
 
+    function set_player(
+    p: Writable<{ Score: number; Time: number; Rolling: boolean; LastResult: string; LastScore: number }>,
+    updates: Partial<{ Score: number; Time: number; Rolling: boolean; LastResult: string; LastScore: number }>
+    ) {
+        p.update(current => ({ ...current, ...updates }));
+    }
+    let pl1 = writable({
+        Score: 0,
+        Time : 0,
+        Rolling : false,
+        LastResult : "[ __ __ __ ]",
+        LastScore : 0,
+    });
+    let pl2 = writable({
+        Score: 0,
+        Time : 0,
+        Rolling : false,
+        LastResult : "[ __ __ __ ]",
+        LastScore : 0,
+    });
 
-    let p1Score = writable(0);
-    let p1Time = writable(0);
-    let p1Rolling = writable(false);
-    let p1GameState = writable("NOT STARTED");
-    let p1LastResult = writable("[ __ __ __ ]");
-    let p1LastScore = writable(0);
-
-    let p2Score = writable(0);
-    let p2Time = writable(0);
-    let p2Rolling = writable(false);
-    let p2GameState = writable("NOT STARTED");
-    let p2LastResult = writable("[ __ __ __ ]");
-    let p2LastScore = writable(0);
+    const pll = [pl1, pl2];
     
     let overlay: HTMLDivElement;
     let p1fireworks: HTMLCanvasElement;
@@ -180,22 +188,19 @@
     let fabioId = writable("fabio");
 
     class Game {
+        players : number;
         playerList: GameManager[];
+        players_objs : Writable[] 
         currentGameState: GameState;
 
         async handleKey(
             gm :  GameManager, 
-            score : Writable,
-            time : Writable,
-            rolling : Writable,
-            gameState : Writable,
-            lastResult : Writable,
-            lastScore : Writable,
+            p : Writable,
             ) {
             if (!gm.isrolling && gm.state === GameState.RUNNING) {
-                rolling.set(true);
+                set_player(p,{Rolling : true});
                 await gm.spin();
-                rolling.set(false);
+                set_player(p,{Rolling : false});
 
                 // 2 x combo
                 if (gm.double(gm.lastSpin)) {
@@ -217,46 +222,44 @@
                         fabioUnCaged = true;
                         gm.fabio_mul = 2;
                         fabio_sound.play();
-
                         showConfetti = true;
                         // Optionally, hide confetti after a duration
                         setTimeout(() => {
-                        showConfetti = false;
+                            showConfetti = false;
                         }, 3000); // Confetti will be visible for 3 seconds
 
                     }
                 }
 
-                score.set(gm.score);
+                set_player(p,{Score : gm.score});
                 let spin_emojis = "[";
                 gm.lastSpin.forEach(element => {
                     spin_emojis += SYMBOLS[element];
                 });
                 spin_emojis += "]";
-                lastResult.set(spin_emojis);
-                lastScore.set(gm.lastScore);
+                set_player(p,{LastResult : spin_emojis});
+                set_player(p,{LastScore : gm.lastScore});
             }
         }
         
         async handleKeyPress(event: KeyboardEvent) {
-            if (event.key === 'a') {
-                let pl = this.playerList[0];
-                this.handleKey(pl, p1Score,p1Time,p1Rolling,p1GameState,p1LastResult,p1LastScore);
-            } if (event.key === 'l') {
-                let pl = this.playerList[1];
-                this.handleKey(pl, p2Score,p2Time,p2Rolling,p2GameState,p2LastResult,p2LastScore);
-            }
+            this.playerList.forEach((player, index) => {
+                if (event.key === player.button) {
+                    this.handleKey(player, this.players_objs[index]);
+                }
+            });
         }
 
-        constructor(players : NodeListOf<HTMLElement>) {
+        constructor(players : NodeListOf<HTMLElement>, buttons : string[], player_obj : Writable[]) {
             this.playerList = [];
+            this.players_objs = player_obj;
+            this.players = this.playerList.length;
             players.forEach((canvas: HTMLElement, index: number) => {
                 const context: CanvasRenderingContext2D = (canvas as HTMLCanvasElement).getContext('2d')!;
-                const button: string = context.canvas.id;
                 context.canvas.width = WIDTH;
                 context.canvas.height = HEIGHT;
                 let sl = new SlotMachine(context, 25);
-                this.playerList.push(new GameManager(GAMETIME,sl))
+                this.playerList.push(new GameManager(GAMETIME,sl, buttons[index], player_obj[index]))
             });
             
             this.handleKeyPress = this.handleKeyPress.bind(this);
@@ -271,26 +274,19 @@
             this.currentGameState = GameState.NOT_STARTED;
         }
 
-        bind(p1: HTMLDivElement, p2: HTMLDivElement, p1fireworks: HTMLCanvasElement, p2fireworks: HTMLCanvasElement) {
-            this.playerList[0].bindElement(p1);
-            this.playerList[1].bindElement(p2);
-            this.playerList[0].bindFireworks(p1fireworks);
-            this.playerList[1].bindFireworks(p2fireworks);
-
+        bind(p: HTMLDivElement[], pfireworks: HTMLCanvasElement[]) {
+            this.playerList.forEach((player, i) => {
+                player.bindElement(p[i]);
+                player.bindFireworks(pfireworks[i]);
+            });
         }
 
         async startGame() {
             overlay.style.display = "flex";
-            overlay.innerHTML = "<h1>Game Starting in 3</h1>";
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            overlay.innerHTML = "<h1>Game Starting in 2</h1>";
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            overlay.innerHTML = "<h1>Game Starting in 1</h1>";
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            overlay.innerHTML = "<h1>Game Starting</h1>";
+            for (let i = 3; i > 0; i--) {
+                overlay.innerHTML = "<h1>Game Starting in " + i + "</h1>";
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
 
             this.currentGameState = GameState.RUNNING;
             for (let player of this.playerList) {
@@ -303,24 +299,18 @@
         }
 
         resetGame() {
-            this.playerList[0].reset();
-            this.playerList[1].reset();
+            this.playerList.forEach((player, i) => {
+                player.reset();
+                set_player(this.players_objs[i],{
+                    Score: player.score,
+                    Time : player.timeLeft,
+                    Rolling : player.isrolling,
+                    LastResult : "[ __ __ __ ]",
+                    LastScore : player.lastScore,
+                });
+            });
+
             fabioUnCaged = false;
-
-            p1Score.set(this.playerList[0].score);
-            p1Time.set(this.playerList[0].timeLeft);
-            p1Rolling.set(this.playerList[0].isrolling);
-            p1GameState.set("NOT STARTED");
-            p1LastResult.set("[ __ __ __ ]");
-            p1LastScore.set(this.playerList[0].lastScore);
-
-            p2Score.set(this.playerList[1].score);
-            p2Time.set(this.playerList[1].timeLeft);
-            p2Rolling.set(this.playerList[1].isrolling);
-            p2GameState.set("NOT STARTED");
-            p2LastResult.set("[ __ __ __ ]");
-            p2LastScore.set(this.playerList[1].lastScore);
-
             // Stop and reset background music
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0;
@@ -341,9 +331,9 @@
                     let gameover = document.createElement('h1');
                     gameover.innerHTML = "Game Over";
                     overlay.appendChild(gameover);
-                    let p1Score = document.createElement('h2');
-                    p1Score.innerHTML = "P1 Score: " + this.playerList[0].score;
-                    overlay.appendChild(p1Score);
+                    let pl1Score = document.createElement('h2');
+                    pl1Score.innerHTML = "P1 Score: " + this.playerList[0].score;
+                    overlay.appendChild(pl1Score);
                     let p2Score = document.createElement('h2');
                     p2Score.innerHTML = "P2 Score: " + this.playerList[1].score;
                     overlay.appendChild(p2Score);
@@ -359,23 +349,19 @@
                     }
                     overlay.appendChild(restart);
                     this.currentGameState = GameState.OVER;
-                }
+                };
 
-                if (this.playerList[0].timeLeft >= 0) {
-                    p1Time.set(Math.floor(this.playerList[0].timeLeft));
-                }
-                if (this.playerList[1].timeLeft >= 0) {
-                    p2Time.set(Math.floor(this.playerList[1].timeLeft));
-                }
-                p1GameState.set((this.playerList[0].state === GameState.OVER ? "OVER" : "GAMIN"));
-                p2GameState.set((this.playerList[1].state === GameState.OVER ? "OVER" : "GAMIN"));
+                this.playerList.forEach((player, i) => {
+                    if (player.timeLeft >= 0) {
+                        set_player(this.players_objs[i],{
+                            Time : Math.floor(player.timeLeft),
+                        });
+                    };
+                });
             }
             // Update the score in the HTML
         }
     }
-
-
-
 
     onMount(() => {
 
@@ -401,13 +387,14 @@
         
         let p1Animation = document.getElementById('p1Animation') as HTMLDivElement;
         let p2Animation = document.getElementById('p2Animation') as HTMLDivElement;
-        
         overlay = document.getElementById('overlay') as HTMLDivElement;
-        
+
         players = document.querySelectorAll(".Player");
-        let game = new Game(players);
+        let buttons = ["a", "l"];
+        let game = new Game(players, buttons, pll);
+
         
-        game.bind(player1, player2, p1fireworks, p2fireworks);
+        game.bind([player1, player2], [p1fireworks, p2fireworks]);
         
         game.playerList[0].animation = p1Animation;
         game.playerList[1].animation = p2Animation;
@@ -437,8 +424,6 @@
             }).render('#paypal-button-container');
         };
         document.body.appendChild(script);
-
-
     });
 </script>
 
@@ -480,9 +465,9 @@ width: 10vw;">
 <div class="gameContainer">
     <div class="gameWindow" id="player1">
         <div class="comboAnimtion" id="p1Animation"></div>
-        <h1>Money :  {$p1Score} SEK</h1> 
-        <h2>Time {$p1Time}</h2>
-        <h1>Last result: {$p1LastResult} : {$p1LastScore} SEK</h1>
+        <h1>Money :  {$pl1.Score} SEK</h1> 
+        <h2>Time {$pl1.Time}</h2>
+        <h1>Last result: {$pl1.LastResult} : {$pl1.LastScore} SEK</h1>
         <div class="canvasHolder">
             <canvas class="Player" id="a"></canvas>
         </div>
@@ -490,9 +475,9 @@ width: 10vw;">
     </div>
     <div class="gameWindow" id="player2">
         <div class="comboAnimtion" id="p2Animation"></div>
-        <h1>Money : {$p2Score} SEK</h1>
-        <h2>Time : {$p2Time}</h2>
-        <h1>Last result: {$p2LastResult} : {$p2LastScore} SEK</h1>
+        <h1>Money : {$pl2.Score} SEK</h1>
+        <h2>Time : {$pl2.Time}</h2>
+        <h1>Last result: {$pl2.LastResult} : {$pl2.LastScore} SEK</h1>
         <div class="canvasHolder">
             <canvas class="Player" id="l"></canvas>
             
