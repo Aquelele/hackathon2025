@@ -18,4 +18,4 @@ export const GAMETIME = 60;
 export const JACKPOT2XVOL = 1;
 export const JACKPOT3XVOL = 1;
 export const WINSOUNDVOL = 0.8;
-export const BACKGROUNDVOL = 0.3;
+export const BACKGROUNDVOL = 0.2;

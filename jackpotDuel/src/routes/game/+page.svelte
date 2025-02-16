@@ -210,7 +210,7 @@
                 }
 
                 //Fabio
-                if(gm.score >= 20){
+                if(gm.score >= 100){
                     if(!(fabioUnCaged)){
                         fabio_sound.play();
                         fabioId.set("fabio_uncaged");
@@ -361,8 +361,12 @@
                     this.currentGameState = GameState.OVER;
                 }
 
-                p1Time.set(Math.floor(this.playerList[0].timeLeft));
-                p2Time.set(Math.floor(this.playerList[1].timeLeft));
+                if (this.playerList[0].timeLeft >= 0) {
+                    p1Time.set(Math.floor(this.playerList[0].timeLeft));
+                }
+                if (this.playerList[1].timeLeft >= 0) {
+                    p2Time.set(Math.floor(this.playerList[1].timeLeft));
+                }
                 p1GameState.set((this.playerList[0].state === GameState.OVER ? "OVER" : "GAMIN"));
                 p2GameState.set((this.playerList[1].state === GameState.OVER ? "OVER" : "GAMIN"));
             }
